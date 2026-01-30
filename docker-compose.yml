@@ -1,0 +1,40 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: spooler3d-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: filament
+      POSTGRES_PASSWORD: changeme
+      POSTGRES_DB: spooler3d
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U filament -d spooler3d"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    container_name: spooler3d-api
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: filament
+      DB_PASSWORD: changeme
+      DB_NAME: spooler3d
+      DB_SSLMODE: disable
+      SERVER_PORT: "8081"
+      GIN_MODE: release
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:
