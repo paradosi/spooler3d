@@ -1,6 +1,8 @@
 package handlers
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"net/http"
 	"time"
 
@@ -8,6 +10,12 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/paradosi/spooler3d/models"
 )
+
+func generateUID() string {
+	b := make([]byte, 7)
+	rand.Read(b)
+	return hex.EncodeToString(b)
+}
 
 type SpoolHandler struct {
 	DB *sqlx.DB
@@ -83,15 +91,22 @@ func (h *SpoolHandler) Create(c *gin.Context) {
 		return
 	}
 
+	uid := ""
+	if req.UID != nil && *req.UID != "" {
+		uid = *req.UID
+	} else {
+		uid = generateUID()
+	}
+
 	var spool models.Spool
 	err := h.DB.Get(&spool,
 		`INSERT INTO spools
-		 (manufacturer_id, filament_type_id, color_name, color_hex,
+		 (uid, manufacturer_id, filament_type_id, color_name, color_hex,
 		  diameter, spool_weight, net_weight, current_weight,
 		  location, purchase_date, purchase_price, notes, td_code)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
 		 RETURNING *, (current_weight - spool_weight) AS remaining_weight`,
-		req.ManufacturerID, req.FilamentTypeID, req.ColorName, req.ColorHex,
+		uid, req.ManufacturerID, req.FilamentTypeID, req.ColorName, req.ColorHex,
 		req.Diameter, req.SpoolWeight, req.NetWeight, req.CurrentWeight,
 		req.Location, req.PurchaseDate, req.PurchasePrice, req.Notes, req.TDCode)
 	if err != nil {
@@ -111,13 +126,14 @@ func (h *SpoolHandler) Update(c *gin.Context) {
 	var spool models.Spool
 	err := h.DB.Get(&spool,
 		`UPDATE spools SET
-		 manufacturer_id = $1, filament_type_id = $2, color_name = $3, color_hex = $4,
-		 diameter = $5, spool_weight = $6, net_weight = $7, current_weight = $8,
-		 location = $9, purchase_date = $10, purchase_price = $11, notes = $12,
-		 td_code = $13, updated_at = $14
-		 WHERE id = $15
+		 uid = COALESCE($1, uid),
+		 manufacturer_id = $2, filament_type_id = $3, color_name = $4, color_hex = $5,
+		 diameter = $6, spool_weight = $7, net_weight = $8, current_weight = $9,
+		 location = $10, purchase_date = $11, purchase_price = $12, notes = $13,
+		 td_code = $14, updated_at = $15
+		 WHERE id = $16
 		 RETURNING *, (current_weight - spool_weight) AS remaining_weight`,
-		req.ManufacturerID, req.FilamentTypeID, req.ColorName, req.ColorHex,
+		req.UID, req.ManufacturerID, req.FilamentTypeID, req.ColorName, req.ColorHex,
 		req.Diameter, req.SpoolWeight, req.NetWeight, req.CurrentWeight,
 		req.Location, req.PurchaseDate, req.PurchasePrice, req.Notes,
 		req.TDCode, time.Now(), c.Param("id"))

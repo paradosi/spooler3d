@@ -2,13 +2,11 @@ package models
 
 import (
 	"time"
-
-	"github.com/google/uuid"
 )
 
 type Spool struct {
 	ID              int        `db:"id" json:"id"`
-	UID             uuid.UUID  `db:"uid" json:"uid"`
+	UID             string     `db:"uid" json:"uid"`
 	ManufacturerID  *int       `db:"manufacturer_id" json:"manufacturer_id"`
 	FilamentTypeID  *int       `db:"filament_type_id" json:"filament_type_id"`
 	ColorName       *string    `db:"color_name" json:"color_name"`
@@ -28,6 +26,7 @@ type Spool struct {
 }
 
 type CreateSpoolRequest struct {
+	UID            *string  `json:"uid"`
 	ManufacturerID *int     `json:"manufacturer_id"`
 	FilamentTypeID *int     `json:"filament_type_id"`
 	ColorName      *string  `json:"color_name"`

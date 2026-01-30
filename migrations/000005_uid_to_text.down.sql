@@ -1,0 +1,2 @@
+ALTER TABLE spools ALTER COLUMN uid SET DEFAULT gen_random_uuid();
+ALTER TABLE spools ALTER COLUMN uid TYPE UUID USING uid::UUID;
